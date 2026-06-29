@@ -290,11 +290,13 @@ local mappings = {
                 end
             end
             -- Steal float_diff keymap from tree view to close it
-            local lhs = keymaps_conf.tree.float_diff
-            utils.keymap("n", lhs, closeit, {
-                desc = "Close floating diff",
-                buffer = M._centered_diff_buf
-            })
+            local lhs = config.opts.keymaps.tree.float_diff
+            if lhs then
+                utils.keymap("n", lhs, closeit, {
+                    desc = "Close floating diff",
+                    buffer = M._centered_diff_buf
+                })
+            end
         end,
         "Toggle diff float: diff in a centred floating window",
     },
