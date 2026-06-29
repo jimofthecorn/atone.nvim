@@ -283,7 +283,13 @@ local mappings = {
             })
             api.nvim_set_option_value("winhl", "Normal:NormalFloat", { win = M._centered_diff_win })
 
-            utils.keymap("t", "gd", float_diff, { buffer = M._centered_diff_buf })
+            local function closeit()
+                if utils.win_exists(M._centered_diff_win) then
+                    api.nvim_win_close(M._centered_diff_win, true)
+                    return
+                end
+            end
+            utils.keymap("t", "gd", closeit, { buffer = M._centered_diff_buf })
         end,
         "Toggle diff float: diff in a centred floating window",
     },
