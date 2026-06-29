@@ -283,11 +283,8 @@ local mappings = {
             })
             api.nvim_set_option_value("winhl", "Normal:NormalFloat", { win = M._centered_diff_win })
 
-            local keymaps_conf = config.opts.keymaps
-            for action, lhs in pairs(keymaps_conf.auto_diff) do
-                utils.keymap("n", lhs, mappings[action][1], { buffer = M._centered_diff_buf })
-                used_mappings[action] = { lhs, mappings[action][2] }
-            end
+            vim.cmd("tnoremap <buffer> <silent> <Esc> <C-\><C-n><CR>:bw!<CR>")
+
         end,
         "Toggle diff float: diff in a centred floating window",
     },
