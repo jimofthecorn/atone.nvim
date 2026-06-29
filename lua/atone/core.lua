@@ -289,7 +289,10 @@ local mappings = {
                     return
                 end
             end
-            utils.keymap("t", "gd", closeit, { buffer = M._centered_diff_buf })
+            utils.keymap("n", "gd", closeit, {
+                desc = "Close floating diff",
+                buffer = M._centered_diff_buf
+            })
         end,
         "Toggle diff float: diff in a centred floating window",
     },
