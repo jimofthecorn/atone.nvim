@@ -8,16 +8,19 @@ local utils = require("atone.utils")
 
 local M = {
     _show = nil,
+    active_win = nil,
     attach_buf = nil,
     augroup = api.nvim_create_augroup("atone", { clear = true }),
     _tree_win = nil,
     _float_win = nil,
     _diff_win = nil,
     _centered_diff_win = nil,
+    _other_state_win = nil,
     _tree_buf = nil,
     _help_buf = nil,
     _auto_diff_buf = nil,
     _centered_diff_buf = nil,
+    _other_state_buf = nil,
     _dummy_win = nil,
     _dummy_buf = nil,
 }
@@ -300,6 +303,56 @@ local mappings = {
         end,
         "Toggle diff float: diff in a centred floating window",
     },
+    diff_split = {
+        function()
+            local edit_buf = M.attach_buf
+            local cur_seq = tree.cur_seq
+            local seq = get_seq_under_cursor() or tree.cur_seq
+            if not seq or not (M._other_state_buf and api.nvim_buf_is_valid(M._other_state_buf)) then
+                return
+            end
+            -- Steal diff_close keymap from tree view to close it
+            local close_key = config.opts.keymaps.tree.diff_close
+            undo_to(seq)
+            local buf_content = vim.api.nvim_buf_get_lines(edit_buf, 0, -1, false)
+            vim.api.nvim_set_option_value('modifiable', true, { buf = M._other_state_buf })
+            vim.api.nvim_buf_set_lines(M._other_state_buf, 0, -1, false, buf_content)
+            vim.api.nvim_set_option_value('modifiable', false, { buf = M._other_state_buf })
+            undo_to(cur_seq)
+            vim.api.nvim_set_current_win(M.attach_win)
+            local ftype = vim.bo.filetype
+            vim.cmd("diffthis")
+            vim.cmd("vsplit " .. " +buffer" .. M._other_state_buf)
+            M._other_state_win = api.nvim_get_current_win()
+
+            local function close_diff()
+                vim.api.nvim_win_close(M._other_state_win, true)
+            end
+            vim.bo.filetype = ftype
+            vim.cmd("syntax on")
+            vim.cmd("diffthis")
+
+            if close_key then
+                utils.keymap("n", close_key, close_diff, {
+                    desc = "Close diff vsplit",
+                    buffer = M._other_state_buf
+                })
+                utils.keymap("n", close_key, close_diff, {
+                    desc = "Close diff vsplit",
+                    buffer = M.attach_buf
+                })
+            end
+        end,
+        "Open state in vsplit in diff mode",
+    },
+    diff_close = {
+        function()
+            if utils.win_exists(M._other_state_win) then
+                api.nvim_win_close(M._other_state_win, true)
+                return
+            end
+        end
+    },
     undo = {
         function()
             api.nvim_buf_call(M.attach_buf, function()
@@ -415,6 +468,7 @@ local function init()
     M._tree_buf = utils.new_buf()
     M._auto_diff_buf = utils.new_buf()
     M._centered_diff_buf = utils.new_buf()
+    M._other_state_buf = utils.new_buf()
     M._help_buf = utils.new_buf()
     M._dummy_buf = nil
 
@@ -493,6 +547,7 @@ local function check()
         not (
             api.nvim_buf_is_valid(M._auto_diff_buf)
             and api.nvim_buf_is_valid(M._centered_diff_buf)
+            and api.nvim_buf_is_valid(M._other_state_buf)
             and api.nvim_buf_is_valid(M._tree_buf)
             and api.nvim_buf_is_valid(M._help_buf)
         )
@@ -513,6 +568,8 @@ function M.open()
     if M._show == nil or not check() then
         init()
     end
+
+    M.attach_win = vim.api.nvim_get_current_win()
 
     if M._show then
         M.focus()
@@ -694,6 +751,7 @@ function M.close()
         pcall(api.nvim_win_close, M._float_win, true)
         pcall(api.nvim_win_close, M._dummy_win, true)
         pcall(api.nvim_win_close, M._centered_diff_win, true)
+        pcall(api.nvim_win_close, M._other_state_win, true)
     end
 end
 

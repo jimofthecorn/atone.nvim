@@ -55,6 +55,8 @@ M.opts = {
             undo = "u",
             redo = "<C-r>",
             float_diff = "gd",
+            diff_split = "gv",
+            diff_close = "<leader>cu",
         },
         auto_diff = {
             quit = { "<C-c>", "q" },
